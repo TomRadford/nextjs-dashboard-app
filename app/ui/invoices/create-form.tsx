@@ -1,3 +1,5 @@
+"use client";
+
 import { CustomerField } from "@/app/lib/definitions";
 import Link from "next/link";
 import {
@@ -7,11 +9,37 @@ import {
   UserCircleIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "@/app/ui/button";
-import { createInvoice } from "../../lib/actions";
+import { createInvoice, State } from "@/app/lib/actions";
+import { useActionState } from "react";
+
+const initialState: State = { message: null, errors: {} };
+
+const InputError = ({
+  errors,
+  name,
+  ariaId = name,
+}: {
+  errors: State["errors"];
+  name: keyof NonNullable<State["errors"]>;
+  ariaId?: string;
+}) => (
+  <div id={ariaId} aria-live="polite" aria-atomic="true">
+    {errors
+      ? errors[name] &&
+        errors[name]?.map((error: string) => (
+          <p className="mt-2 text-sm text-red-500" key={error}>
+            {error}
+          </p>
+        ))
+      : null}
+  </div>
+);
 
 export default function Form({ customers }: { customers: CustomerField[] }) {
+  const [state, formAction] = useActionState(createInvoice, initialState);
+  console.log(state);
   return (
-    <form action={createInvoice}>
+    <form action={formAction}>
       <div className="rounded-md bg-gray-50 p-4 md:p-6">
         {/* Customer Name */}
         <div className="mb-4">
@@ -24,6 +52,7 @@ export default function Form({ customers }: { customers: CustomerField[] }) {
               name="customerId"
               className="peer block w-full cursor-pointer rounded-md border border-gray-200 py-2 pl-10 text-sm outline-2 placeholder:text-gray-500"
               defaultValue=""
+              aria-describedby="customer-id"
             >
               <option value="" disabled>
                 Select a customer
@@ -36,6 +65,11 @@ export default function Form({ customers }: { customers: CustomerField[] }) {
             </select>
             <UserCircleIcon className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-500" />
           </div>
+          <InputError
+            errors={state.errors}
+            name="customerId"
+            ariaId="customer-id"
+          />
         </div>
 
         {/* Invoice Amount */}
@@ -52,10 +86,12 @@ export default function Form({ customers }: { customers: CustomerField[] }) {
                 step="0.01"
                 placeholder="Enter USD amount"
                 className="peer block w-full rounded-md border border-gray-200 py-2 pl-10 text-sm outline-2 placeholder:text-gray-500"
+                aria-describedby="amount"
               />
               <CurrencyDollarIcon className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-500 peer-focus:text-gray-900" />
             </div>
           </div>
+          <InputError errors={state.errors} name="amount" />
         </div>
 
         {/* Invoice Status */}
@@ -72,6 +108,7 @@ export default function Form({ customers }: { customers: CustomerField[] }) {
                   type="radio"
                   value="pending"
                   className="h-4 w-4 cursor-pointer border-gray-300 bg-gray-100 text-gray-600 focus:ring-2"
+                  aria-describedby="status"
                 />
                 <label
                   htmlFor="pending"
@@ -98,6 +135,7 @@ export default function Form({ customers }: { customers: CustomerField[] }) {
             </div>
           </div>
         </fieldset>
+        <InputError errors={state.errors} name="status" />
       </div>
       <div className="mt-6 flex justify-end gap-4">
         <Link
